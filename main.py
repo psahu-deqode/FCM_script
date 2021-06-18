@@ -51,7 +51,7 @@ def main():
     if resp.status_code == 200:
         send_status = "Success"
     else:
-        send_status = "Success"
+        send_status = "Failed"
     # if the notification is not received and the browser wait time expires, the received status will be "pending"
     try:
         WebDriverWait(driver, 3600).until(
