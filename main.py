@@ -1,8 +1,10 @@
+import csv
 import json
 import time
+from _csv import writer
+
 import requests
 import threading
-from _csv import writer
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
@@ -23,16 +25,15 @@ token_list = []
 
 
 def main():
-    driver = webdriver.Chrome(chrome_options=option, executable_path='/usr/bin/chromedriver')
+    driver = webdriver.Chrome(options=option, executable_path='/usr/bin/chromedriver')
     driver.get('http://localhost:8000/')
     button = driver.find_element_by_id("token_button")
     button.click()
-    time.sleep(20)
+    time.sleep(30)
     token = driver.find_element_by_id("token").text
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'key=AAAAfRVjqX8:APA91bHtxxpFWg33uD4Wj-Vlp915l6WZVjOZrbpkwgTlP5GnIrgLLHnDRlxTcrg9-Y'
-                         '-7f95PTR6AB_GwF5BahUtPjsi3_f3aRIrAFXcQH5HoK-B9suEqXPikQr8tLBbgCjnNAR-oGPgR',
+        'Authorization': 'key=AUTHORIZATION_KEY',
         'Content-Type': 'application/json'
     }
     url = 'https://fcm.googleapis.com/fcm/send'
@@ -42,25 +43,32 @@ def main():
         "data": {
             "notification": {
                 "title": "Title of Your Notification",
-                "body": "Body of Your Notification",
+                "body": f"This message is sent to {token}",
             }
         }
 
     }
     resp = requests.post(url, headers=headers, data=json.dumps(payload))
+    sent_message = payload.get("data").get("notification")
+
     if resp.status_code == 200:
         send_status = "Success"
     else:
         send_status = "Failed"
+
     # if the notification is not received and the browser wait time expires, the received status will be "pending"
     try:
         WebDriverWait(driver, 3600).until(
             EC.text_to_be_present_in_element((By.ID, "notification"), "title")
         )
         received_status = "Received"
+        received_message = driver.find_element_by_id("notification").text
     except:
         received_status = "Pending"
-    data_list = [token, send_status, received_status]
+        received_message = driver.find_element_by_id("notification").text
+
+    data_list = [token, send_status, sent_message, received_status, received_message]
+
     with open('event_with_status.csv', 'a') as f_object:
         writer_object = writer(f_object)
         writer_object.writerow(data_list)
